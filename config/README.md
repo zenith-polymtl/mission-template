@@ -2,16 +2,35 @@
 
 | Fichier | Change quand | Chargé par |
 |---|---|---|
-| `<mission>.yaml` | On règle la mission : gains, PWM des servos, mapping des interrupteurs de la manette, seuils, chemins de sauvegarde | Le launch de la mission, qui le passe aux nœuds |
-| `sites/<site>.yaml` | On change de terrain : coordonnées, altitudes | Le launch, avec `site:=<nom>` (par défaut `sim`) |
+| `<mission>.yaml` | On règle la mission : gains, PWM des servos, mapping des interrupteurs de la manette, seuils, chemins de sauvegarde | Le launch file de la mission, qui le passe aux nodes |
+| `sites/<site>.yaml` | On change de terrain : coordonnées, altitudes | Le launch file, avec `site:=<nom>` (par défaut `sim`) |
 | `drones/<drone>.json5` | On vise un autre drone depuis le sol : adresses Zenoh | `compose/zenoh-ground.yml`, avec `DRONE=<nom>` |
 | `mavros.yaml` | Rarement : paramètres mavros | `compose/mavros.yml` |
 | `zenoh-air.json5` | Rarement : ce qui a le droit de traverser la radio | `compose/zenoh-air.yml` |
 | `zed.yaml` | Réglages de la caméra ZED | `compose/zed.yml` |
 
-Règle : une valeur qui change entre deux drones, deux terrains ou deux essais n'est jamais écrite dans un nœud ni dans un launch. Elle est ici.
+Règle : une valeur qui change entre deux drones, deux terrains ou deux essais n'est jamais écrite dans un node ni dans un launch file. Elle est ici.
 
-Exemple de `config/<mission>.yaml`, à copier pour une nouvelle mission :
+## Les sites
+
+Un fichier par terrain de vol. `sim.yaml` est la position de départ du SITL (Canberra), `cimetiere.yaml` le terrain habituel.
+
+Le fichier est écrit en paramètres ROS 2, sous le joker `/**` qui veut dire « tous les nodes ». Le launch file n'a donc rien à lire ni à convertir : il donne le fichier tel quel aux nodes.
+
+```yaml
+/**:
+  ros__parameters:
+    site: sim
+    home: {lat: -35.363262, lon: 149.165237, alt: 584.0}   # alt en mètres AMSL
+    target: {lat: -35.362800, lon: 149.165700}
+    altitude_agl: 10.0
+```
+
+Un node lit ces valeurs sous les noms `home.lat`, `home.lon`, `home.alt`, `target.lat`, `target.lon` et `altitude_agl`.
+
+## Exemple de `config/<mission>.yaml`
+
+À copier pour une nouvelle mission :
 
 ```yaml
 mission:

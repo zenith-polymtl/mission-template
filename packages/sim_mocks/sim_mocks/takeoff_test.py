@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Nœud de test : passe en GUIDED, arme et décolle. Simulation seulement.
+"""Node de test : passe en GUIDED, arme et décolle.
 
-    ros2 run sim_mocks takeoff_test --ros-args -p sim:=true -p alt:=10.0
+    ros2 run sim_mocks takeoff_test --ros-args -p alt:=10.0
 
-Refuse de démarrer si le paramètre sim n'est pas vrai. C'est la seule façon d'armer depuis le
-code dans ce dépôt : un nœud de mission n'arme jamais et ne change jamais de mode, c'est le pilote
-qui le fait. Ce nœud existe pour aller plus vite en simulation, comme la node takeoff de la
-formation 3.4. Il n'est inclus par aucun launch.
+Le suffixe _test dit ce que c'est : un node qui touche au matériel, pour aller plus vite en
+simulation. C'est la seule façon d'armer depuis le code dans ce repo : un node de mission n'arme
+jamais et ne change jamais de mode, c'est le pilote qui le fait. Il n'est inclus par aucun
+launch file, et il annonce au démarrage ce qu'il va faire.
 """
 
 import rclpy
@@ -17,10 +17,8 @@ from rclpy.node import Node
 class TakeoffTest(Node):
     def __init__(self):
         super().__init__('takeoff_test')
-        self.declare_parameter('sim', False)
         self.declare_parameter('alt', 10.0)
-        if not self.get_parameter('sim').value:
-            raise SystemExit('takeoff_test ne tourne qu\'en simulation : ajoute -p sim:=true')
+        self.get_logger().warn('node de test : arme et décolle le drone')
         self.mode = self.create_client(SetMode, '/mavros/set_mode')
         self.arm = self.create_client(CommandBool, '/mavros/cmd/arming')
         self.takeoff = self.create_client(CommandTOL, '/mavros/cmd/takeoff')

@@ -1,0 +1,8 @@
+# Site « cimetiere » : le terrain de vol habituel.
+# Coordonnées approximatives, à remplacer par un relevé fait sur place.
+/**:
+  ros__parameters:
+    site: cimetiere
+    home: {lat: 45.5048, lon: -73.6132, alt: 60.0}   # alt en mètres AMSL
+    target: {lat: 45.5056, lon: -73.6120}
+    altitude_agl: 10.0                               # hauteur de travail au-dessus du sol, mètres

@@ -1,0 +1,18 @@
+[submodule "packages/nav_stack"]
+	path = packages/nav_stack
+	url = https://github.com/zenith-polymtl/nav_stack
+[submodule "packages/vision"]
+	path = packages/vision
+	url = https://github.com/zenith-polymtl/vision
+[submodule "packages/tools"]
+	path = packages/tools
+	url = https://github.com/zenith-polymtl/tools
+	branch = aeac-2027
+[submodule "packages/custom_interfaces"]
+	path = packages/custom_interfaces
+	url = https://github.com/zenith-polymtl/custom_interfaces
+	branch = aeac-2027
+[submodule "packages/zed-ros2-wrapper"]
+	path = packages/zed-ros2-wrapper
+	url = https://github.com/zenith-polymtl/zed-ros2-wrapper
+	branch = zenith

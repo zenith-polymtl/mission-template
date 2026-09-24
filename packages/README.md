@@ -1,16 +1,18 @@
-# packages/ : les paquets partagés
+# packages/ : les packages partagés
 
-Un paquet est **local** à sa mission (dans `workspaces/<mission>_ws/src/`) sauf s'il sert ailleurs. S'il sert à deux workspaces de ce dépôt, il vit ici comme dossier simple (`sim_mocks`). S'il sert à deux dépôts (aeac-2027 et SUAS, ou d'une année à l'autre), il vit ici comme sous-module, et c'est un lead qui le décide.
+Un package est **local** à sa mission (dans `workspaces/<mission>_ws/src/`) sauf s'il sert ailleurs. S'il sert à deux workspaces de ce repo, il vit ici comme dossier ordinaire (`sim_mocks`). S'il sert à deux repos (aeac-2027 et SUAS, ou d'une année à l'autre), il vit ici comme submodule, et c'est un lead qui le décide.
 
-| Paquet | Type | Rôle |
+| Package | Type | Rôle |
 |---|---|---|
-| `custom_interfaces` | sous-module | Messages, services, et constantes d'enum (états, modes, PWM) |
-| `tools` | sous-module | `topics.py` (la table des noms de topics), heartbeats, utilitaires |
-| `nav_stack` | sous-module | Initialisation, conversions GPS et local, waypoints |
-| `vision` | sous-module | Pipeline ZED et YOLO (conteneur vision) |
-| `zed-ros2-wrapper` | sous-module tiers, fork `zenith` | Wrapper ZED ; hors des workspaces, construit à part dans son image |
-| `sim_mocks` | dossier | Ce qui remplace le matériel en simulation |
+| `custom_interfaces` | submodule | Messages, services, et constantes d'enum (états, modes, PWM) |
+| `tools` | submodule | `topics.py` (la table des noms de topics), heartbeats, utilitaires |
+| `nav_stack` | submodule | Initialisation, conversions GPS et local, waypoints |
+| `vision` | submodule | Pipeline ZED et YOLO (conteneur vision) |
+| `zed-ros2-wrapper` | submodule tiers, fork `zenith` | Wrapper ZED ; hors des workspaces, construit à part dans son image |
+| `sim_mocks` | dossier ordinaire | Ce qui remplace le matériel en simulation |
 
-Un workspace utilise un paquet partagé par un symlink dans son `src/` : `make link C=<mission> PKG=<paquet>`, puis on commet le lien. `ls -l workspaces/<mission>_ws/src` dit ce que la mission utilise et ce qui est partagé.
+Chaque submodule a son `package.xml` à la racine de son repo : `packages/tools/package.xml`, `packages/custom_interfaces/package.xml`. `tools/topics.py` est la table des topics, `custom_interfaces/msg/MissionState.msg` porte les états de mission.
 
-Sous-modules, trois choses à savoir : on clone avec `--recurse-submodules` ; `make init` rattrape si on a oublié ; si `make status` dit qu'un sous-module est modifié localement, demander à un lead avant de continuer. Le reste (`make bump`, créer un sous-module) est dans `ARCHITECTURE.md`, section leads.
+Un workspace utilise un package partagé par un symlink dans son `src/` : `make link C=<mission> PKG=<package>`, puis on commet le lien. C'est un geste de lead : une recrue reçoit un workspace dont les liens sont déjà là. `ls -l workspaces/<mission>_ws/src` dit ce que la mission utilise et ce qui est partagé.
+
+Submodules, trois choses à savoir : on clone avec `--recurse-submodules` ; `make init` rattrape si on a oublié ; si `make status` dit qu'un submodule est modifié localement, demander à un lead avant de continuer. Le reste (`make bump`, créer un submodule) est dans `ARCHITECTURE.md`, section leads.

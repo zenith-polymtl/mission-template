@@ -1,5 +1,5 @@
 # Conteneur de développement (poste WSL). On y entre avec `make dev`.
-# Tout le dépôt est monté dans /aeac : on peut construire et lancer n'importe quel workspace.
+# Tout le repo est monté dans /aeac : on peut construire et lancer n'importe quel workspace.
 services:
   dev:
     build:

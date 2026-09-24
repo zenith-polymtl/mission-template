@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""`make check` : vérifie le dépôt avant une PR. Une ligne par problème, code de retour 1 s'il y en a.
+"""`make check` : vérifie le repo avant une PR. Une ligne par problème, code de retour 1 s'il y en a.
 
 Vérifie : les package.xml (mainteneur, licence, description), les dossiers test/ générés par
-ros2 pkg create, les symlinks cassés dans les workspaces, les sous-modules non initialisés,
+ros2 pkg create, les symlinks cassés dans les workspaces, les submodules non initialisés,
 les cibles make citées dans README.md et ARCHITECTURE.md qui n'existent pas, et les fichiers
 de docker/ que personne ne lit.
 """
@@ -37,7 +37,7 @@ for pkg in ROOT.glob('**/package.xml'):
     if test_dir.is_dir():
         names = {p.name for p in test_dir.iterdir()}
         if names >= {'test_copyright.py', 'test_flake8.py', 'test_pep257.py'}:
-            problem(test_dir, 'dossier test/ généré par ros2 pkg create : à supprimer (pas de tests dans ce dépôt)')
+            problem(test_dir, 'dossier test/ généré par ros2 pkg create : à supprimer (pas de tests dans ce repo)')
 
 # 3. symlinks cassés dans les workspaces
 for src in ROOT.glob('workspaces/*/src'):
@@ -45,13 +45,13 @@ for src in ROOT.glob('workspaces/*/src'):
         if entry.is_symlink() and not entry.exists():
             problem(entry, f'symlink cassé vers {entry.readlink()}')
 
-# 4. sous-modules non initialisés
+# 4. submodules non initialisés
 gitmodules = ROOT / '.gitmodules'
 if gitmodules.exists():
     for m in re.finditer(r'path\s*=\s*(\S+)', gitmodules.read_text()):
         path = ROOT / m.group(1)
         if not path.is_dir() or not any(path.iterdir()):
-            problem(path, 'sous-module vide : lance make init')
+            problem(path, 'submodule vide : lancez make init')
 
 # 5. cibles make citées dans la doc
 makefile = (ROOT / 'Makefile').read_text(encoding='utf-8')

@@ -1,13 +1,46 @@
-# Architecture du dépôt de mission
+# Architecture du repo de mission
 
 Une page. Ce qu'il faut savoir avant de lire du code.
 
+## Le repo d'un coup d'œil
+
+```
+aeac-2027/
+├── workspaces/   une mission, un workspace
+├── packages/     les packages partagés
+├── config/       les réglages, hors code
+├── compose/      ce qui lance les conteneurs
+├── docker/       les recettes des images
+├── systemd/      le démarrage au boot
+├── scripts/      les vérifications du repo
+├── models/       les modèles de vision (hors git)
+└── bags/         les enregistrements de vol (hors git)
+```
+
+## Quatre mots à connaître avant de lire la suite
+
+- **systemd** : ce qui lance nos conteneurs au démarrage de la Jetson, sans personne au clavier. Sur le terrain, on branche la batterie et tout part tout seul.
+- **Zenoh** : le pont qui fait passer certains topics par la radio. Sans lui, un topic du drone reste sur le drone.
+- **domaine ROS** : un numéro qui isole des réseaux ROS entre eux. Deux machines sur des numéros différents ne se voient pas, même sur le même réseau.
+- **namespace de topics** : le préfixe `/aeac/external` ou `/aeac/internal` dans le nom du topic. C'est lui qui dit si le topic a le droit de traverser la radio.
+
 ## Qui tourne où
+
+```
+  Poste WSL (dev et simulation)      Jetson, sur le drone         Portable GCS, au sol
+  ┌───────────────────────────┐     ┌────────────────────┐       ┌────────────────────┐
+  │ conteneur dev             │     │ mavros    zed      │       │ conteneur gcs      │
+  │ conteneur sim + mavros    │     │ vision    mission  │ radio │ zenoh-ground       │
+  │ vers le SITL de Mission   │     │ zenoh-air          │<=====>│                    │
+  │ Planner                   │     │                    │       │                    │
+  └───────────────────────────┘     └────────────────────┘       └────────────────────┘
+         domaine ROS 3                  domaine ROS 2                domaine ROS 3
+```
 
 | Machine | Régime | Ce qui tourne | Lancé par | Domaine ROS |
 |---|---|---|---|---|
 | Poste WSL | Développement | conteneur `dev` : coder, construire un workspace, rviz, `ros2 topic` | `make dev` | 3 |
-| Poste WSL | Simulation | conteneur `dev` + `mavros-sim` vers le SITL de Mission Planner ; la mission de `C=` avec `sim:=true` ; mocks à la main | `make sim C=` | 3 |
+| Poste WSL | Simulation | conteneur `sim` + `mavros-sim` vers le SITL de Mission Planner ; la mission de `C=` avec `sim:=true` ; mocks à la main | `make sim C=` | 3 |
 | Jetson | Test sur véhicule | `mavros`, `zed`, `zenoh-air`, `vision`, la mission : les mêmes compose qu'en déploiement, en avant-plan | `make mavros`, `make vision`, `make drone C=` | 2 |
 | Jetson | Déploiement | exactement les mêmes compose, démarrés au boot et relancés s'ils tombent | systemd (`make deploy`) | 2 |
 | Portable GCS | Vol | conteneur `gcs` (workspace `gcs_ws`) + `zenoh-ground` vers le drone choisi | `make gcs C= DRONE=` | 3 |
@@ -18,8 +51,8 @@ Une page. Ce qu'il faut savoir avant de lire du code.
 
 ```
 Jetson (domaine 2, DDS local seulement)                 Portable (domaine 3, DDS local seulement)
-   nœuds mission ──► /aeac/internal/...   (reste ici)
-   nœuds mission ──► /aeac/external/...  ──► zenoh-air ══ SIYI ou Tailscale ══ zenoh-ground ──► nœuds GCS
+   nodes mission ──► /aeac/internal/...   (reste ici)
+   nodes mission ──► /aeac/external/...  ──► zenoh-air ══ SIYI ou Tailscale ══ zenoh-ground ──► nodes GCS
                      /tf, /tf_static     ──►                                                ──►
 ```
 
@@ -38,33 +71,40 @@ Un nouveau drone = un fichier de plus dans `config/drones/` et une ligne ici. SS
 
 Une mission, c'est trois choses :
 
-1. `workspaces/<mission>_ws/` : ses paquets locaux dans `src/`, et des symlinks vers les paquets partagés de `packages/` (`make link`). Le paquet `<mission>_bringup` contient `launch/mission.launch.py`, lancé sur le drone.
-2. `config/<mission>.yaml` : tout ce qui se règle (gains, PWM, interrupteurs, seuils). Le launch le charge et le passe aux nœuds. Rien de tout ça dans le code.
+1. `workspaces/<mission>_ws/` : ses packages locaux dans `src/`, et des symlinks vers les packages partagés de `packages/` (`make link`, un geste de lead). Le package `<mission>_bringup` contient `launch/mission.launch.py`, lancé sur le drone.
+2. `config/<mission>.yaml` : tout ce qui se règle (gains, PWM, interrupteurs, seuils). Le launch file le charge et le passe aux nodes. Rien de tout ça dans le code.
 3. `gcs_ws/src/gcs_bringup/launch/<mission>.launch.py` : ce que le portable lance pour cette mission.
 
-`make build C=<mission>` construit ce workspace et rien d'autre. `make sim C=<mission>` le simule. `make drone C=<mission>` le lance sur la Jetson. Le launch est le même en simulation et en vol : `sim:=true` passe un paramètre `sim` aux nœuds qui touchent au matériel, et ils entourent leur seul appel matériel d'un `if not self.sim`. `site:=<nom>` choisit `config/sites/<nom>.yaml` (coordonnées du terrain) ; en simulation, `make sim C=<mission> SITE=<nom>`.
+**Chaque mission a son workspace**, y compris pendant le développement. `gcs_ws` est le workspace du sol : on n'y met rien de spécifique à un drone ou à une mission. Le conteneur `dev` monte tout le repo dans `/aeac` et sert à construire n'importe quel workspace : `make build C=<mission>`.
+
+`make build C=<mission>` construit ce workspace et rien d'autre. `make sim C=<mission>` le simule. `make drone C=<mission>` le lance sur la Jetson. Le launch file est le même en simulation et en vol : `sim:=true` passe un paramètre `sim` aux nodes qui touchent au matériel, et ils entourent leur seul appel matériel d'un `if not self.sim`. `site:=<nom>` choisit `config/sites/<nom>.yaml` (coordonnées du terrain, en paramètres ROS 2 prêts à passer aux nodes) ; en simulation, `make sim C=<mission> SITE=<nom>`.
+
+## Se simplifier la vie
+
+Une commande qu'on retape dix fois par séance devient une cible du Makefile. `make takeoff`, `make rc` et `make echo T=<topic>` sont nées comme ça. Ajouter une cible est normal, et `make help` la montre à tout le monde.
 
 ## Règles de code
 
-- **Le code de mission n'arme jamais et ne change jamais de mode.** C'est le pilote. Seuls les nœuds `*_test` de `sim_mocks` le font, sous `sim:=true`, et aucun launch de mission ne les inclut.
-- **Un nom de topic s'écrit une fois**, dans `tools/topics.py` : `from tools.topics import SHOOT`. Jamais de littéral dans un nœud ni un launch.
-- **Un enum, une constante de message** dans `custom_interfaces` (états, modes, PWM). Jamais redéfini dans un nœud.
+- **Le code de mission n'arme jamais et ne change jamais de mode.** C'est le pilote. Seuls les nodes `*_test` de `sim_mocks` le font ; on les reconnaît à leur suffixe, ils annoncent en WARN ce qu'ils vont faire, et aucun launch file de mission ne les inclut. C'est la seule exception.
+- **Un nom de topic s'écrit une fois**, dans `tools/topics.py` : `from tools.topics import SHOOT`. Jamais de littéral dans un node ni un launch file.
+- **Un enum, une constante de message** dans `custom_interfaces` (états, modes, PWM). Jamais redéfini dans un node.
 - **Pas de `time.sleep` dans un callback, pas de `spin_until_future_complete` depuis un callback.** Timers et `call_async`.
 - **Pas de vérification factice.** Une fonction de readiness vérifie ou n'existe pas.
 - **Logs en français**, `INFO` pour les événements (jamais du périodique), `WARN` pour ce qui demande un regard, `ERROR` pour ce qui arrête. Code, topics, commits en anglais.
 - **`package.xml` est le contrat** : toute dépendance y est déclarée. Le Dockerfile installe ce que `rosdep` ne couvre pas et le dit en commentaire.
 - **Pas de tests, pas de dossier `test/`.** `make check` vérifie ce qui se vérifie sans en écrire.
 
-## Sous-modules, en trois phrases
+## Submodules, en trois phrases
 
-On clone avec `--recurse-submodules`. `make init` rattrape si on a oublié. Si `make status` dit qu'un sous-module est modifié localement, on demande à un lead avant de continuer.
+On clone avec `--recurse-submodules`. `make init` rattrape si on a oublié. Si `make status` dit qu'un submodule est modifié localement, on demande à un lead avant de continuer.
 
 ## Pour les leads
 
-- **Avancer un paquet partagé** : `make bump PKG=tools` (fetch, checkout de `origin/main`, tag daté, pointeur stagé), puis `git commit -m "bump tools"` et `git push --recurse-submodules=on-demand`.
-- **Contribuer à un paquet partagé** : `git -C packages/tools switch main`, coder, commit, push, PR dans le dépôt du paquet, puis `make bump PKG=tools` ici.
-- **Créer un paquet partagé** : dépôt GitHub avec `package.xml` à la racine, `git submodule add <url> packages/<nom>`, une ligne dans `packages/README.md`.
-- **Sortir un paquet du partage** : `git submodule deinit packages/<nom>`, copier le dossier dans le workspace concerné, `git rm packages/<nom>`.
+- **Avancer un package partagé** : `make bump PKG=tools` (fetch, checkout de `origin/main`, tag daté, pointeur stagé), puis `git commit -m "bump tools"` et `git push --recurse-submodules=on-demand`.
+- **Contribuer à un package partagé** : `git -C packages/tools switch main`, coder, commit, push, PR dans le repo du package, puis `make bump PKG=tools` ici.
+- **Créer un package partagé** : repo GitHub avec `package.xml` à la racine, `git submodule add <url> packages/<nom>`, une ligne dans `packages/README.md`.
+- **Sortir un package du partage** : `git submodule deinit packages/<nom>`, copier le dossier dans le workspace concerné, `git rm packages/<nom>`.
+- **Lier un package partagé à un workspace** : `make link C=<mission> PKG=<package>`, puis commettre le lien. Les recrues reçoivent les liens déjà faits.
 - **Déployer** : `make deploy C=<mission>` sur la Jetson (voir `systemd/install.md`).
-- **Après la compétition** : tag `<compétition>-<année>` sur `main`, puis suppression des workspaces et paquets de mission qui ne serviront plus.
+- **Après la compétition** : tag `<compétition>-<année>` sur `main`, puis suppression des workspaces et packages de mission qui ne serviront plus.
 - **Modèles de vision** : `models/` est ignoré par git ; `make models` télécharge l'archive dont l'URL est dans le Makefile (`MODELS_URL`).

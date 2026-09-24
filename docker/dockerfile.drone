@@ -9,6 +9,16 @@ ARG ROS_DISTRO
 ENV DEBIAN_FRONTEND=noninteractive
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
+# PIN TEMPORAIRE (septembre 2026), comme dans la formation 3 : les binaires ros-humble-mavros 2.15.1
+# ont échoué sur la ferme de build ROS et la 2.14.0 a été retirée de l'index. Sans ce pin, apt répond
+# « Unable to locate package ros-humble-mavros-extras ». On remplace la source apt de ROS par le
+# snapshot du 2026-08-07 (mavros 2.14.0), signé par la clé « ROS Snapshot builder ».
+# À retirer quand ros-humble-mavros >= 2.15.2 réapparaît. Suivi : github.com/mavlink/mavros/issues/2293
+RUN set -o pipefail && curl -sSL --fail 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xAD19BAB3CBF125EA' \
+    | gpg --dearmor -o /usr/share/keyrings/ros-snapshots.gpg \
+ && printf 'Types: deb\nURIs: http://snapshots.ros.org/humble/2026-08-07/ubuntu\nSuites: jammy\nComponents: main\nSigned-By: /usr/share/keyrings/ros-snapshots.gpg\n' \
+    > /etc/apt/sources.list.d/ros2.sources
+
 # Outils de build
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
@@ -39,5 +49,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-numpy \
     python3-geopy \
     && rm -rf /var/lib/apt/lists/*
+
+# Shell sourcé automatiquement : ROS 2, puis le workspace du dossier courant s'il est construit,
+# puis le daemon ros2. `make shell` donne donc un terminal où `ros2 topic list` marche sans rien taper.
+# Bash ne lit .bashrc que dans un shell interactif : les compose et les cibles make gardent leurs `source`.
+RUN printf '%s\n' \
+    '' \
+    '# Ajouté par le Dockerfile : ROS 2, le workspace courant, le daemon ros2.' \
+    'source /opt/ros/$ROS_DISTRO/setup.bash' \
+    '[ -f "$PWD/install/setup.bash" ] && source "$PWD/install/setup.bash"' \
+    'ros2 daemon start > /dev/null 2>&1' \
+    >> /root/.bashrc
 
 WORKDIR /aeac
