@@ -14,7 +14,7 @@ make dev                  # entre dans le conteneur ; tout le repo est dans /aea
 
 Les shells des conteneurs sourcent ROS 2 et le workspace du dossier courant tout seuls : `ros2 topic list` marche dès l'ouverture.
 
-Pour simuler une mission : SITL lancé dans Mission Planner (formation 1), puis `make sim C=<mission>`. Dans un second terminal, `make shell` entre dans le conteneur qui tourne, et `make rc`, `make takeoff` et `make echo T=<topic>` lancent les mocks et regardent les topics. Voir [packages/sim_mocks/README.md](packages/sim_mocks/README.md).
+Pour simuler une mission : SITL lancé dans Mission Planner (formation 1), puis `make sim C=<mission>` : mavros se connecte au SITL et la mission tourne dans le conteneur `dev`. Ctrl-C n'arrête que la mission ; `make down` arrête tout. Dans un second terminal, `make shell` entre dans `dev`, et `make rc`, `make takeoff` et `make echo T=<topic>` lancent les mocks et regardent les topics. Voir [packages/sim_mocks/README.md](packages/sim_mocks/README.md).
 
 `make help` liste toutes les commandes, en trois sections : développement et simulation, test sur véhicule, déploiement. Une commande qu'on retape souvent devient une cible du Makefile. `make check` avant chaque PR.
 

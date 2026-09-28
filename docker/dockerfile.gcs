@@ -1,4 +1,4 @@
-# Image du portable GCS et du poste de développement (compose/gcs.yml, dev.yml, sim.yml).
+# Image du portable GCS et du poste de développement (compose/gcs.yml, dev.yml).
 # Ce qui diffère de dockerfile.drone : rviz2, rqt et X11 en plus, pour voir ce qui se passe.
 # Tout le reste est identique à dockerfile.drone, volontairement : une mission se simule ici avec la même base.
 # Même version de numpy que dockerfile.drone : celle d'Ubuntu 22.04 (python3-numpy, 1.21).
