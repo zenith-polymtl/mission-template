@@ -129,9 +129,11 @@ takeoff: ## Arme et fait décoller le drone en simulation (node de test de sim_m
 rc: ## Simule la manette au clavier (node de test de sim_mocks, garde le terminal)
 	@$(pick_container); $(only_sim); docker exec -it $$NAME bash -lc '$(SOURCE) && ros2 run sim_mocks rc_simulator'
 
+# Le daemon ros2 ne part que dans un shell interactif (.bashrc). Sans lui, en WSL Mirrored,
+# ros2 topic echo attend deux minutes avant d'échouer : on le démarre d'abord.
 echo: ## Affiche un topic : make echo T=/aeac/internal/mission/state
 	@test -n "$(T)" || { echo "Usage : make echo T=/le/topic"; exit 1; }
-	@$(pick_container); docker exec -it $$NAME bash -lc '$(SOURCE) && ros2 topic echo $(T)'
+	@$(pick_container); docker exec -it $$NAME bash -lc '$(SOURCE) && ros2 daemon start > /dev/null 2>&1; ros2 topic echo $(T)'
 
 link: ## Lie un package partagé au workspace de C : make link C=water PKG=tools
 	@test -n "$(PKG)" || { echo "Usage : make link C=<mission> PKG=<package de packages/>"; exit 1; }
