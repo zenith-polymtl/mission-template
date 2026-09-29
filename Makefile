@@ -6,7 +6,7 @@
 
 # ----- Variables (surchargeables : make build C=water IMG=drone) -----
 # C     : la mission, donc le workspace workspaces/$(C)_ws
-# IMG   : le conteneur dans lequel on travaille : dev | drone | gcs | vision | sim
+# IMG   : le conteneur dans lequel on travaille : dev | drone | gcs | vision
 # DRONE : la config Zenoh sol, config/drones/$(DRONE).json5
 # SITE  : le terrain en simulation, config/sites/$(SITE).yaml
 
@@ -44,13 +44,23 @@ if [ -n "$(IMG_SET)" ]; then NAME=aeac-$(IMG); else \
 	  if [ "$$N" = "1" ]; then NAME=$$LIST; \
 	  elif [ "$$N" = "0" ]; then echo "Aucun conteneur en cours. Lancez make sim C=<mission> ou make dev."; exit 1; \
 	  else echo "Plusieurs conteneurs en cours :"; printf '  %s\n' $$LIST; \
-	       echo "Choisissez le vôtre : IMG=<dev|sim|drone|gcs|vision>"; exit 1; fi; \
+	       echo "Choisissez le vôtre : IMG=<dev|drone|gcs|vision>"; exit 1; fi; \
 	fi
 endef
 
-# Les nodes de test qui arment le drone ne se lancent que dans le conteneur de simulation ou de développement.
+# Les nodes de test qui arment le drone ne se lancent que dans le conteneur dev, celui de la simulation.
 define only_sim
-case "$$NAME" in aeac-sim|aeac-dev) ;; *) echo "Cette cible ne sert qu'en simulation (conteneur sim ou dev). Trouvé : $$NAME"; exit 1;; esac
+case "$$NAME" in aeac-dev) ;; *) echo "Cette cible ne sert qu'en simulation (conteneur dev). Trouvé : $$NAME"; exit 1;; esac
+endef
+
+# Un lien vers packages/ copié depuis Windows arrive en fichier texte qui contient son chemin,
+# et colcon l'ignore. On le remplace par le vrai lien avant de construire.
+define repair_links
+for f in $(WS)/src/*; do \
+	  if [ -f "$$f" ] && [ ! -L "$$f" ] && grep -qx '\.\./\.\./\.\./packages/[A-Za-z0-9_-]*' "$$f"; then \
+	    t=$$(cat "$$f"); rm "$$f" && ln -s "$$t" "$$f" && echo "Lien réparé : $$f -> $$t"; \
+	  fi; \
+	done
 endef
 
 .DEFAULT_GOAL := help
@@ -89,6 +99,7 @@ models: ## Télécharge les modèles de vision dans models/ (hors git)
 	mkdir -p models && curl -L "$(MODELS_URL)" | tar -xz -C models
 
 build: ## Construit le workspace de C dans le conteneur IMG (colcon)
+	@$(repair_links)
 	docker compose -f $(COMPOSE) run --rm $(IMG) bash -lc \
 	  'source /opt/ros/humble/setup.bash && cd /aeac/$(WS) && colcon build --symlink-install'
 
@@ -96,16 +107,20 @@ dev: ## Entre dans le conteneur de développement (tout le repo est monté dans 
 	docker compose -f compose/dev.yml up -d dev
 	docker compose -f compose/dev.yml exec dev bash
 
-sim: ## Simulation de la mission C : mavros vers le SITL + le launch file avec sim:=true et le site SITE
-	docker compose -f compose/sim.yml up --abort-on-container-exit
+# Le conteneur dev est celui de la mission C : changer de C le recrée dans le bon workspace.
+# Ctrl-C n'arrête que le launch ; mavros-sim et dev restent, make down arrête tout.
+sim: ## Simulation de la mission C : mavros vers le SITL, puis le launch file dans le conteneur dev avec sim:=true et le site SITE
+	docker compose -f compose/sim.yml up -d mavros-sim
+	docker compose -f compose/dev.yml up -d dev
+	docker compose -f compose/dev.yml exec dev bash -lc '$(SOURCE) && ros2 launch $(C)_bringup mission.launch.py sim:=true site:=$(SITE)'
 
-shell: ## Ouvre un terminal dans le conteneur en cours (IMG=dev, sim... pour en choisir un autre)
+shell: ## Ouvre un terminal dans le conteneur en cours (IMG=dev, gcs... pour en choisir un autre)
 	@$(pick_container); docker exec -it $$NAME bash
 
-down: ## Arrête tous les conteneurs aeac-* de ce poste (dev, sim, ...)
+down: ## Arrête tous les conteneurs aeac-* de ce poste (dev, mavros-sim, ...)
 	@docker ps --format '{{.Names}}' | grep '^aeac-' | xargs -r docker stop
 
-logs: ## Suit les logs du conteneur en cours
+logs: ## Suit les logs du conteneur en cours (IMG=mavros-sim pour ceux de mavros en simulation)
 	@$(pick_container); docker logs -f $$NAME
 
 takeoff: ## Arme et fait décoller le drone en simulation (node de test de sim_mocks)
@@ -114,9 +129,11 @@ takeoff: ## Arme et fait décoller le drone en simulation (node de test de sim_m
 rc: ## Simule la manette au clavier (node de test de sim_mocks, garde le terminal)
 	@$(pick_container); $(only_sim); docker exec -it $$NAME bash -lc '$(SOURCE) && ros2 run sim_mocks rc_simulator'
 
+# Le daemon ros2 ne part que dans un shell interactif (.bashrc). Sans lui, en WSL Mirrored,
+# ros2 topic echo attend deux minutes avant d'échouer : on le démarre d'abord.
 echo: ## Affiche un topic : make echo T=/aeac/internal/mission/state
 	@test -n "$(T)" || { echo "Usage : make echo T=/le/topic"; exit 1; }
-	@$(pick_container); docker exec -it $$NAME bash -lc '$(SOURCE) && ros2 topic echo $(T)'
+	@$(pick_container); docker exec -it $$NAME bash -lc '$(SOURCE) && ros2 daemon start > /dev/null 2>&1; ros2 topic echo $(T)'
 
 link: ## Lie un package partagé au workspace de C : make link C=water PKG=tools
 	@test -n "$(PKG)" || { echo "Usage : make link C=<mission> PKG=<package de packages/>"; exit 1; }

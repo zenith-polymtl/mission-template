@@ -5,7 +5,7 @@ Une page. Ce qu'il faut savoir avant de lire du code.
 ## Le repo d'un coup d'œil
 
 ```
-aeac-2027/
+<repo de mission>/
 ├── workspaces/   une mission, un workspace
 ├── packages/     les packages partagés
 ├── config/       les réglages, hors code
@@ -29,10 +29,11 @@ aeac-2027/
 ```
   Poste WSL (dev et simulation)      Jetson, sur le drone         Portable GCS, au sol
   ┌───────────────────────────┐     ┌────────────────────┐       ┌────────────────────┐
-  │ conteneur dev             │     │ mavros    zed      │       │ conteneur gcs      │
-  │ conteneur sim + mavros    │     │ vision    mission  │ radio │ zenoh-ground       │
-  │ vers le SITL de Mission   │     │ zenoh-air          │<=====>│                    │
-  │ Planner                   │     │                    │       │                    │
+  │ conteneur dev : la        │     │ mavros    zed      │       │ conteneur gcs      │
+  │ mission de C= avec        │     │ vision    mission  │ radio │ zenoh-ground       │
+  │ sim:=true                 │     │ zenoh-air          │<=====>│                    │
+  │ mavros-sim vers le SITL   │     │                    │       │                    │
+  │ de Mission Planner        │     │                    │       │                    │
   └───────────────────────────┘     └────────────────────┘       └────────────────────┘
          domaine ROS 3                  domaine ROS 2                domaine ROS 3
 ```
@@ -40,7 +41,7 @@ aeac-2027/
 | Machine | Régime | Ce qui tourne | Lancé par | Domaine ROS |
 |---|---|---|---|---|
 | Poste WSL | Développement | conteneur `dev` : coder, construire un workspace, rviz, `ros2 topic` | `make dev` | 3 |
-| Poste WSL | Simulation | conteneur `sim` + `mavros-sim` vers le SITL de Mission Planner ; la mission de `C=` avec `sim:=true` ; mocks à la main | `make sim C=` | 3 |
+| Poste WSL | Simulation | conteneur `dev` + `mavros-sim` vers le SITL de Mission Planner ; la mission de `C=` lancée dans `dev` avec `sim:=true` ; mocks à la main | `make sim C=` | 3 |
 | Jetson | Test sur véhicule | `mavros`, `zed`, `zenoh-air`, `vision`, la mission : les mêmes compose qu'en déploiement, en avant-plan | `make mavros`, `make vision`, `make drone C=` | 2 |
 | Jetson | Déploiement | exactement les mêmes compose, démarrés au boot et relancés s'ils tombent | systemd (`make deploy`) | 2 |
 | Portable GCS | Vol | conteneur `gcs` (workspace `gcs_ws`) + `zenoh-ground` vers le drone choisi | `make gcs C= DRONE=` | 3 |

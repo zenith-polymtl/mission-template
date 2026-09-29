@@ -1,9 +1,11 @@
-# Simulation de la mission C sur le poste WSL : `make sim C=<mission>`.
+# mavros vers le SITL, pour la simulation sur le poste WSL : `make sim C=<mission>`.
 # 1. Le SITL tourne dans Mission Planner sous Windows (formation 1). mavros s'y connecte en TCP.
-# 2. Le launch file de la mission est le même qu'en vol, avec sim:=true (les nodes qui touchent au
-#    matériel lisent ce paramètre) et site:=$SITE (config/sites/<site>.yaml, sim par défaut : make sim C=demo SITE=cimetiere).
+# 2. `make sim` démarre ce service avec le conteneur dev (compose/dev.yml), puis lance dans dev le
+#    launch file de la mission, le même qu'en vol, avec sim:=true (les nodes qui touchent au matériel
+#    lisent ce paramètre) et site:=$SITE (config/sites/<site>.yaml, sim par défaut : make sim C=demo SITE=cimetiere).
 # 3. Les mocks se lancent à la main dans un second terminal : make rc, make takeoff
 #    (rc_simulator lit le clavier, donc il garde son terminal).
+# Ses logs : make logs IMG=mavros-sim
 services:
   mavros-sim:
     build:
@@ -18,25 +20,3 @@ services:
     command: >
       bash -lc "source /opt/ros/humble/setup.bash &&
         ros2 launch mavros apm.launch fcu_url:=tcp://${SITL_HOST:-172.17.0.1}:5762 fcu_protocol:=v2.0"
-
-  sim:
-    build:
-      context: ..
-      dockerfile: docker/dockerfile.gcs
-    image: aeac/gcs
-    container_name: aeac-sim
-    network_mode: host
-    ipc: host
-    tty: true
-    stdin_open: true
-    depends_on:
-      - mavros-sim
-    volumes:
-      - ..:/aeac
-    working_dir: /aeac/workspaces/${C:-gcs}_ws
-    environment:
-      - ROS_DOMAIN_ID=3
-      - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
-    command: >
-      bash -lc "source /opt/ros/humble/setup.bash && source install/setup.bash &&
-        ros2 launch ${C:-gcs}_bringup mission.launch.py sim:=true site:=${SITE:-sim}"

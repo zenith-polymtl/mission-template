@@ -2,7 +2,7 @@
 """`make check` : vérifie le repo avant une PR. Une ligne par problème, code de retour 1 s'il y en a.
 
 Vérifie : les package.xml (mainteneur, licence, description), les dossiers test/ générés par
-ros2 pkg create, les symlinks cassés dans les workspaces, les submodules non initialisés,
+ros2 pkg create, les symlinks cassés ou copiés en fichiers texte dans les workspaces, les submodules non initialisés,
 les cibles make citées dans README.md et ARCHITECTURE.md qui n'existent pas, et les fichiers
 de docker/ que personne ne lit.
 """
@@ -39,11 +39,14 @@ for pkg in ROOT.glob('**/package.xml'):
         if names >= {'test_copyright.py', 'test_flake8.py', 'test_pep257.py'}:
             problem(test_dir, 'dossier test/ généré par ros2 pkg create : à supprimer (pas de tests dans ce repo)')
 
-# 3. symlinks cassés dans les workspaces
+# 3. symlinks cassés dans les workspaces, et liens copiés depuis Windows (un fichier texte qui contient le chemin)
 for src in ROOT.glob('workspaces/*/src'):
     for entry in src.iterdir():
         if entry.is_symlink() and not entry.exists():
             problem(entry, f'symlink cassé vers {entry.readlink()}')
+        elif entry.is_file() and not entry.is_symlink() and re.fullmatch(r'(\.\./){3}packages/[\w-]+\s*', entry.read_text(errors='replace')):
+            mission = src.parent.name.removesuffix('_ws')
+            problem(entry, f'lien copié depuis Windows, devenu fichier texte : make build C={mission} le recrée')
 
 # 4. submodules non initialisés
 gitmodules = ROOT / '.gitmodules'
