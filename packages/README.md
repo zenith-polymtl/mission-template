@@ -1,6 +1,6 @@
 # packages/ : les packages partagés
 
-Un package est **local** à sa mission (dans `workspaces/<mission>_ws/src/`) sauf s'il sert ailleurs. S'il sert à deux workspaces de ce repo, il vit ici comme dossier ordinaire (`sim_mocks`). S'il sert à deux repos (aeac-2027 et SUAS, ou d'une année à l'autre), il vit ici comme submodule, et c'est un lead qui le décide.
+Un package est **local** à sa mission (dans `workspaces/<mission>_ws/src/`) sauf s'il sert ailleurs. S'il sert à deux workspaces de ce repo, il vit ici comme dossier ordinaire (`sim_mocks`). S'il sert à deux repos (aeac-2027 et SUAS, ou d'une année à l'autre), il vit ici comme submodule (un repo GitHub à part, attaché ici à un commit précis), et c'est un lead qui le décide.
 
 | Package | Type | Rôle |
 |---|---|---|
@@ -13,6 +13,6 @@ Un package est **local** à sa mission (dans `workspaces/<mission>_ws/src/`) sau
 
 Chaque submodule a son `package.xml` à la racine de son repo : `packages/tools/package.xml`, `packages/custom_interfaces/package.xml`. `tools/topics.py` est la table des topics, `custom_interfaces/msg/MissionState.msg` porte les états de mission.
 
-Un workspace utilise un package partagé par un symlink dans son `src/` : `make link C=<mission> PKG=<package>`, puis on commet le lien. C'est un geste de lead : une recrue reçoit un workspace dont les liens sont déjà là. `ls -l workspaces/<mission>_ws/src` dit ce que la mission utilise et ce qui est partagé.
+Un workspace utilise un package partagé par un symlink dans son `src/`, un raccourci vers le dossier de `packages/` : `make link C=<mission> PKG=<package>`, puis un commit du lien. C'est un geste de lead : une recrue reçoit un workspace dont les liens sont déjà là. `ls -l workspaces/<mission>_ws/src` dit ce que la mission utilise et ce qui est partagé.
 
-Submodules, trois choses à savoir : on clone avec `--recurse-submodules` ; `make init` rattrape si on a oublié ; si `make status` dit qu'un submodule est modifié localement, demander à un lead avant de continuer. Le reste (`make bump`, créer un submodule) est dans `ARCHITECTURE.md`, section leads.
+Ce qu'une recrue doit savoir des submodules est dans `ARCHITECTURE.md`, section « Submodules » ; les gestes de lead (`make bump`, créer un submodule) dans sa section « Pour les leads ».

@@ -8,6 +8,7 @@
 	path = packages/tools
 	url = https://github.com/zenith-polymtl/tools
 	branch = aeac-2027
+	ignore = untracked
 [submodule "packages/custom_interfaces"]
 	path = packages/custom_interfaces
 	url = https://github.com/zenith-polymtl/custom_interfaces

@@ -1,7 +1,7 @@
 """Ce que le portable GCS lance quelle que soit la mission : le heartbeat vers le drone.
 
 `make gcs C=base` lance ce fichier seul. Le launch sol d'une mission (launch/<mission>.launch.py)
-l'inclut puis ajoute ses propres nœuds :
+l'inclut puis ajoute ses propres nodes :
 
     from launch.actions import IncludeLaunchDescription
     from launch.launch_description_sources import PythonLaunchDescriptionSource

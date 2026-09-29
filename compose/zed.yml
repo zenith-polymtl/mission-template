@@ -1,6 +1,6 @@
 # Caméra ZED sur la Jetson. `make zed` à la main, zed.service au boot.
 # L'image est celle du wrapper ZED construite à part (packages/zed-ros2-wrapper, fork zenith),
-# pas une image de ce dépôt. Le fichier de paramètres de la caméra est dans config/.
+# pas une image de ce repo. Le fichier de paramètres de la caméra est dans config/.
 services:
   zed:
     image: zed_ros2_l4t_36.4.0_sdk_5.1.0:latest

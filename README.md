@@ -14,14 +14,14 @@ make dev                  # entre dans le conteneur ; tout le repo est dans /aea
 
 Les shells des conteneurs sourcent ROS 2 et le workspace du dossier courant tout seuls : `ros2 topic list` marche dès l'ouverture.
 
-Pour simuler une mission : SITL lancé dans Mission Planner (formation 1), puis `make sim C=<mission>` : mavros se connecte au SITL et la mission tourne dans le conteneur `dev`. Ctrl-C n'arrête que la mission ; `make down` arrête tout. Dans un second terminal, `make shell` entre dans `dev`, et `make rc`, `make takeoff` et `make echo T=<topic>` lancent les mocks et regardent les topics. Voir [packages/sim_mocks/README.md](packages/sim_mocks/README.md).
+Pour simuler une mission : lancer le SITL dans Mission Planner (formation 1), puis `make sim C=<mission>`. mavros se branche sur le SITL et la mission tourne dans le conteneur `dev`. Ctrl-C n'arrête que la mission ; `make down` arrête tout. Dans un second terminal : `make takeoff` arme et décolle, `make rc` simule la manette, `make echo T=<topic>` affiche un topic, `make shell` ouvre un terminal dans `dev` (voir [packages/sim_mocks/README.md](packages/sim_mocks/README.md)). Une autre source de simulation que Mission Planner se choisit avec `SITL=` (voir le Makefile).
 
 `make help` liste toutes les commandes, en trois sections : développement et simulation, test sur véhicule, déploiement. Une commande qu'on retape souvent devient une cible du Makefile. `make check` avant chaque PR.
 
 ## Règles du repo
 
-- `main` = ce qui vole. On travaille sur une branche, on ouvre une PR, un lead fusionne.
-- Le code de mission n'arme jamais et ne change jamais de mode : c'est le pilote. Les seuls nodes qui le font sont les `*_test` de `sim_mocks`, jamais inclus par un launch file de mission.
+- `main` = ce qui vole. On travaille sur une branche, on ouvre une PR, un lead merge.
+- Le code de mission n'arme jamais et ne change jamais de mode : c'est le pilote. Les seules nodes qui le font sont les `*_test` de `sim_mocks`, jamais inclus par un launch file de mission.
 - Un nom de topic s'écrit une fois, dans `tools/topics.py`. `/aeac/external/...` traverse la radio, `/aeac/internal/...` reste sur le drone.
 - Ce qui change entre deux drones, deux terrains ou deux essais est dans `config/`, pas dans le code.
 - Chaque mission a son workspace. `gcs_ws` est le workspace du sol : rien de spécifique à un drone ou à une mission n'y entre.
@@ -34,20 +34,21 @@ Ce repo est un modèle : il contient tout sauf les missions, submodules et liens
 
 1. Sur GitHub, créer le nouveau repo dans `zenith-polymtl` à partir de ce modèle (bouton « Use this template »).
 2. Le cloner avec `--recurse-submodules`, puis `make init` et `make check`.
-3. Protéger `main` (Settings, Branches) : PR obligatoire, un lead fusionne.
+3. Vérifier dans `.gitmodules` la branche suivie par chaque submodule (`branch =`, `main` sinon) : c'est elle que `make bump` suit. `tools` et `custom_interfaces` suivent `aeac-2027` tant que cette branche n'est pas mergée dans leur `main`.
+4. Protéger `main` (Settings, Branches) : PR obligatoire, un lead merge.
 
 Les formations de l'équipe contrôle (Formations-Controle, formation 5) se font directement sur un clone de ce repo.
 
-Puis, pour chaque mission : `workspaces/<mission>_ws/src/<mission>_bringup/` (avec `launch/mission.launch.py`), `config/<mission>.yaml`, les liens vers les packages partagés (`make link`, dont `sim_mocks`), `gcs_ws/src/gcs_bringup/launch/<mission>.launch.py` pour le sol. Les liens sont commis : une recrue qui copie le workspace n'a rien à lier.
+Ajouter une mission : ce qu'elle contient est dans [ARCHITECTURE.md](ARCHITECTURE.md), section « Une mission » ; la marche à suivre pas à pas est l'annexe 5.4 des formations de l'équipe contrôle (repo Formations-Controle).
 
 ## Sur le drone
 
-Voir [procédure.md](procédure.md) (checklist jour J) et [systemd/install.md](systemd/install.md) (démarrage au boot). Les ports série : `/dev/ttyTHS1` sur JetPack 6, `/dev/ttyTHS0` sur JetPack 5 ; l'utilisateur doit être dans le groupe `dialout`.
+Voir [procédure.md](procédure.md) (checklist jour J) et [systemd/install.md](systemd/install.md) (démarrage au boot). Sur la Jetson, `.env` (copié de `.env.example`) donne le terrain de vol, `SITE`, obligatoire, et le port série du Pixhawk, `FCU_DEVICE` ; l'utilisateur doit être dans le groupe `dialout`.
 
 ## Dépannage
 
-- `ros2 topic list` vide dans un conteneur : vérifier `ROS_DOMAIN_ID` (2 sur le drone, 3 au sol) et que `lo-multicast` est actif sur la Jetson (`make lo-multicast-status`).
-- `make build` échoue sur un package absent : `make status` ; un submodule vide se règle avec `make init`, un symlink cassé apparaît dans `make check`.
-- `make sim` ne joint pas le SITL : voir `SITL_HOST` en tête du Makefile (WSL en mode NAT, WSL en mode mirrored, Linux, Mac) et `.env.example`.
+- `ros2 topic list` vide dans un conteneur : vérifier `ROS_DOMAIN_ID` (2 sur le drone, 3 au sol, `SIM_DOMAIN` de `.env` en simulation) et que `lo-multicast` est actif sur la Jetson (`make lo-multicast-status`).
+- `make build` construit moins de packages que prévu : `make status` ; un submodule vide se règle avec `make init`, un symlink cassé apparaît dans `make check`.
+- `make sim` ne joint pas le SITL : `make print-vars` montre `FCU_URL` ; voir `SITL` et `SITL_HOST` en tête du Makefile et `.env.example` (WSL en mode NAT, Gazebo, autre machine).
 - Fichiers appartenant à root après un build : les conteneurs tournent en root pour l'instant ; `sudo chown -R $USER:$USER .` dans le repo.
 - Le reste des problèmes de poste (WSL, Docker, ports) est dans les formations, fichier `DEPANNAGE.md`.

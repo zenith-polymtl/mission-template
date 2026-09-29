@@ -26,7 +26,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-colcon-common-extensions \
     && rm -rf /var/lib/apt/lists/*
 
-# mavros (pour les messages et services mavros_msgs dans les nœuds) et ses données géographiques
+# mavros (pour les messages et services mavros_msgs dans les nodes) et ses données géographiques
 RUN apt-get update && apt-get install -y \
     ros-${ROS_DISTRO}-mavros-extras \
     ros-${ROS_DISTRO}-mavlink \

@@ -1,4 +1,4 @@
-# Ce que docker build ne doit pas envoyer au démon (sinon chaque build copie tout le dépôt)
+# Ce que docker build ne doit pas envoyer au démon (sinon chaque build copie tout le repo)
 .git
 **/build
 **/install

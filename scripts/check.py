@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """`make check` : vérifie le repo avant une PR. Une ligne par problème, code de retour 1 s'il y en a.
 
-Vérifie : les package.xml (mainteneur, licence, description), les dossiers test/ générés par
-ros2 pkg create, les symlinks cassés ou copiés en fichiers texte dans les workspaces, les submodules non initialisés,
-les cibles make citées dans README.md et ARCHITECTURE.md qui n'existent pas, et les fichiers
+Vérifie : les package.xml (mainteneur, licence, description) et les dossiers test/ générés par
+ros2 pkg create, hors submodules ; les symlinks cassés ou copiés en fichiers texte dans les workspaces, les submodules non initialisés,
+les cibles make citées dans README.md, ARCHITECTURE.md et procédure.md qui n'existent pas, et les fichiers
 de docker/ que personne ne lit.
 """
 
@@ -21,9 +21,15 @@ def problem(path, message):
     problems.append(f'{path.relative_to(ROOT) if isinstance(path, Path) else path}: {message}')
 
 
-# 1. package.xml : mainteneur, licence, description
+gitmodules = ROOT / '.gitmodules'
+submodules = re.findall(r'path\s*=\s*(\S+)', gitmodules.read_text()) if gitmodules.exists() else []
+
+# 1. package.xml : mainteneur, licence, description. Les submodules sont exclus : un défaut là se
+# corrige dans le repo du submodule, pas ici, et ne doit pas faire échouer le check d'une PR.
 for pkg in ROOT.glob('**/package.xml'):
     if any(part in ('build', 'install', 'log') for part in pkg.parts):
+        continue
+    if any(pkg.is_relative_to(ROOT / sub) for sub in submodules):
         continue
     text = pkg.read_text(encoding='utf-8', errors='replace')
     if re.search(r'<maintainer[^>]*>[^<]*todo', text, re.I) or 'todo.todo' in text:
@@ -49,12 +55,10 @@ for src in ROOT.glob('workspaces/*/src'):
             problem(entry, f'lien copié depuis Windows, devenu fichier texte : make build C={mission} le recrée')
 
 # 4. submodules non initialisés
-gitmodules = ROOT / '.gitmodules'
-if gitmodules.exists():
-    for m in re.finditer(r'path\s*=\s*(\S+)', gitmodules.read_text()):
-        path = ROOT / m.group(1)
-        if not path.is_dir() or not any(path.iterdir()):
-            problem(path, 'submodule vide : lancez make init')
+for sub in submodules:
+    path = ROOT / sub
+    if not path.is_dir() or not any(path.iterdir()):
+        problem(path, 'submodule vide : lancez make init')
 
 # 5. cibles make citées dans la doc
 makefile = (ROOT / 'Makefile').read_text(encoding='utf-8')

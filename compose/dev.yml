@@ -19,6 +19,6 @@ services:
     working_dir: /aeac/workspaces/${C:-gcs}_ws
     command: ["bash", "-lc", "while :; do sleep 86400; done"]
     environment:
-      - ROS_DOMAIN_ID=3
+      - ROS_DOMAIN_ID=${SIM_DOMAIN:-3}
       - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
       - DISPLAY=${DISPLAY}
