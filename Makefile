@@ -53,6 +53,16 @@ define only_sim
 case "$$NAME" in aeac-dev) ;; *) echo "Cette cible ne sert qu'en simulation (conteneur dev). Trouvé : $$NAME"; exit 1;; esac
 endef
 
+# Un lien vers packages/ copié depuis Windows arrive en fichier texte qui contient son chemin,
+# et colcon l'ignore. On le remplace par le vrai lien avant de construire.
+define repair_links
+for f in $(WS)/src/*; do \
+	  if [ -f "$$f" ] && [ ! -L "$$f" ] && grep -qx '\.\./\.\./\.\./packages/[A-Za-z0-9_-]*' "$$f"; then \
+	    t=$$(cat "$$f"); rm "$$f" && ln -s "$$t" "$$f" && echo "Lien réparé : $$f -> $$t"; \
+	  fi; \
+	done
+endef
+
 .DEFAULT_GOAL := help
 
 ##@ 1. Développement et simulation (poste WSL)
@@ -89,6 +99,7 @@ models: ## Télécharge les modèles de vision dans models/ (hors git)
 	mkdir -p models && curl -L "$(MODELS_URL)" | tar -xz -C models
 
 build: ## Construit le workspace de C dans le conteneur IMG (colcon)
+	@$(repair_links)
 	docker compose -f $(COMPOSE) run --rm $(IMG) bash -lc \
 	  'source /opt/ros/humble/setup.bash && cd /aeac/$(WS) && colcon build --symlink-install'
 
