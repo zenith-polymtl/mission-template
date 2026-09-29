@@ -1,10 +1,10 @@
-# Site « sim » : la position de départ par défaut du SITL ArduPilot (Canberra).
+# Site « sim » : le terrain de la simulation. Le SITL démarre là où Mission Planner le place,
+# donc la cible est donnée par rapport au home de l'autopilote (là où il a armé), en mètres.
 # Un fichier par terrain de vol, avec les mêmes clés (voir cimetiere.yaml).
 # Format : des paramètres ROS 2 sous le joker /** , pour que le launch file le passe tel quel
 # aux nodes, par-dessus config/<mission>.yaml.
 /**:
   ros__parameters:
     site: sim
-    home: {lat: -35.363262, lon: 149.165237, alt: 584.0}   # alt en mètres AMSL
-    target: {lat: -35.362800, lon: 149.165700}
-    altitude_agl: 10.0                                     # hauteur de travail au-dessus du sol, mètres
+    target: {north_m: 50.0, east_m: 40.0}   # la cible, en mètres au nord et à l'est du home
+    altitude_agl: 10.0                       # hauteur de travail au-dessus du home, mètres

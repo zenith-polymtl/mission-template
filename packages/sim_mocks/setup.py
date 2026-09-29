@@ -14,7 +14,7 @@ setup(
     zip_safe=True,
     maintainer='Zenith, équipe contrôle',
     maintainer_email='controle@zenith-polymtl.ca',
-    description='Mocks du matériel pour la simulation, et nœuds de test qui arment.',
+    description='Mocks du matériel pour la simulation, et nodes de test qui arment.',
     license='Apache-2.0',
     entry_points={
         'console_scripts': [

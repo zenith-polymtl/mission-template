@@ -1,8 +1,8 @@
-# Site « cimetiere » : le terrain de vol habituel.
-# Coordonnées approximatives, à remplacer par un relevé fait sur place.
+# Site « cimetiere » : le terrain de vol habituel. La cible se compte depuis le home, là où le
+# pilote arme : il arme donc toujours au même endroit du terrain.
+# Décalage approximatif, à remplacer par une mesure faite sur place.
 /**:
   ros__parameters:
     site: cimetiere
-    home: {lat: 45.5048, lon: -73.6132, alt: 60.0}   # alt en mètres AMSL
-    target: {lat: 45.5056, lon: -73.6120}
-    altitude_agl: 10.0                               # hauteur de travail au-dessus du sol, mètres
+    target: {north_m: 90.0, east_m: 95.0}   # la cible, en mètres au nord et à l'est du home
+    altitude_agl: 10.0                       # hauteur de travail au-dessus du home, mètres

@@ -1,5 +1,5 @@
 # Pont Zenoh côté drone. `make zenoh-air` à la main, zenoh-air.service au boot.
-# Seuls les topics /aeac/external/* et /tf traversent : voir config/zenoh-air.json5.
+# Seuls les topics /aeac/external/..., /tf et /tf_static traversent : voir config/zenoh-air.json5.
 services:
   zenoh-air:
     image: eclipse/zenoh-bridge-ros2dds:latest

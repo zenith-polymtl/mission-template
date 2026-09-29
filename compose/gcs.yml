@@ -1,6 +1,7 @@
-# Les nœuds sol de la mission C sur le portable, en vol : `make gcs C=<mission> DRONE=<drone>`
+# Les nodes sol de la mission C sur le portable, en vol : `make gcs C=<mission> DRONE=<drone>`
 # (le Makefile ajoute zenoh-ground.yml). Le workspace est gcs_ws ; le launch sol d'une mission
-# est gcs_bringup/launch/<mission>.launch.py. `C=base` lance seulement le heartbeat.
+# est gcs_bringup/launch/<mission>.launch.py. `make gcs C=base` lance seulement le heartbeat.
+# Sans C=, `make gcs` s'arrête et demande la mission.
 services:
   gcs:
     build:

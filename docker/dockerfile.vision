@@ -1,6 +1,6 @@
 # Image du conteneur vision sur la Jetson (compose/vision.yml). Ne se construit que sur la Jetson.
 # Ce qui diffère des autres : base JetPack (CUDA, TensorRT) au lieu de l'image ROS ; ROS Humble
-# installé à la main ; PyTorch et ultralytics pour YOLO. Reprise de la branche de compétition 2026.
+# installé à la main ; PyTorch et ultralytics pour YOLO.
 # numpy est épinglé à 1.26.4 (ultralytics et torch Jetson ne supportent pas numpy 2) ; c'est le seul
 # endroit où numpy vient de pip. Le pin est posé une fois, avant torch, et torch/ultralytics sont
 # installés sans dépendances pour qu'ils ne le remplacent pas.
@@ -21,7 +21,7 @@ RUN apt-get update && apt-get install -y \
     && add-apt-repository universe \
     && rm -rf /var/lib/apt/lists/*
 
-# Dépôt apt ROS 2
+# Repo apt ROS 2
 RUN export ROS_APT_SOURCE_VERSION=$(curl -s https://api.github.com/repos/ros-infrastructure/ros-apt-source/releases/latest | grep -F "tag_name" | awk -F'"' '{print $4}') \
     && curl -L -o /tmp/ros2-apt-source.deb "https://github.com/ros-infrastructure/ros-apt-source/releases/download/${ROS_APT_SOURCE_VERSION}/ros2-apt-source_${ROS_APT_SOURCE_VERSION}.$(. /etc/os-release && echo ${UBUNTU_CODENAME:-${VERSION_CODENAME}})_all.deb" \
     && dpkg -i /tmp/ros2-apt-source.deb && rm /tmp/ros2-apt-source.deb

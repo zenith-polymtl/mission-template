@@ -9,7 +9,7 @@ Touches (canal 8, 9 et 10 de la manette, numérotés 7, 8, 9 dans le message) :
     e / d / c : canal 9 haut / centre / bas
     r / f / v : canal 10 haut / centre / bas
     q         : quitter
-Les autres canaux restent à 1500. Repris d'aeac-2026, inchangé sur le fond.
+Les autres canaux restent à 1500.
 """
 
 import select
